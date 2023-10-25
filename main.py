@@ -239,7 +239,7 @@ def main(page: ft.Page):
     #Show Dialog after animation
     wheel.on_animation_end = get_selected_option
     
-    spin_button = ft.ElevatedButton("Animate!", on_click=wheel.animate)
+    spin_button = ft.ElevatedButton("Spin the Wheel!", on_click=wheel.animate)
     
     def go_to_configuration(e):
         page.go("/")
