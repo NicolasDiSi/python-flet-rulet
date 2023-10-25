@@ -28,7 +28,6 @@ class OptionForm(ft.UserControl):
         self.color_picker = ColorPicker(generate_random_color('hex'))
         self.ref = self
         self.img_path = None
-        # self.prob_field = ft.TextField(value=f'',label=f'Probabilidad de la Opción {option_number}')
         self.prob_field = SliderExample()
         self.del_instance = ft.IconButton( icon=ft.icons.DELETE_FOREVER_ROUNDED, on_click=self.remove_widget, data=0 )
         self.container = parent
@@ -187,8 +186,6 @@ def main(page: ft.Page):
         
         overlay.update()
         
-        #Getting last position from the overlay controls
-        position = overlay.controls.__len__()
         #Gets the value from the first element (the title) inside the last column
         last_option = normalize_value(overlay.controls.__getitem__(-1).controls.__getitem__(0).controls.__getitem__(0).value)
         
@@ -235,11 +232,56 @@ def main(page: ft.Page):
         dialog.open = True
         page.update()
     
-    wheel = Wheel(300, 50)
+    wheel = Wheel(300, 100)
     #Show Dialog after animation
     wheel.on_animation_end = get_selected_option
     
     spin_button = ft.ElevatedButton("Spin the Wheel!", on_click=wheel.animate)
+    
+    #Wheel Customization
+    img_size_slider = SliderExample('px')
+    img_size_slider.max_value = 200
+    def size_change():
+        wheel.badge_size = img_size_slider.string_value
+        # print(wheel.badge_size)
+        
+        wheel.update_sections(force=True)
+        
+    img_size_slider.callback = size_change
+    
+    duration_slider = SliderExample('segundos')
+    duration_slider.max_value = 20
+    
+    def duration_change():
+        wheel.set_duration(duration_slider.string_value*1000)
+        # print(wheel.duration)
+            
+        wheel.update_sections(force=True)
+        
+    duration_slider.callback = duration_change
+    
+    radius_slider = SliderExample('px')
+    radius_slider.max_value = 600
+    
+    def radius_change():
+        wheel.radius = radius_slider.string_value
+        wheel.container.height = radius_slider.string_value*2
+        # print(wheel.radius)
+        
+        wheel.update_sections(force=True)
+        
+    radius_slider.callback = radius_change
+    
+    config_wheel_style = ft.Column( 
+                        [
+                            ft.Text("Tamaño máximo de las imágenes"),
+                            img_size_slider,
+                            ft.Text("Cuanto Dura la animación"),
+                            duration_slider,
+                            ft.Text("Radio de la ruleta"),
+                            radius_slider
+                        ]
+                    )
     
     def go_to_configuration(e):
         page.go("/")
@@ -264,8 +306,9 @@ def main(page: ft.Page):
                     [
                         ft.AppBar(title=ft.Text("Ruleta"), bgcolor=ft.colors.SURFACE_VARIANT),
                         ft.ElevatedButton("Ir a Configuración", on_click=go_to_configuration,icon=ft.icons.SETTINGS,top=True),
-                        wheel.container,
                         spin_button,
+                        wheel.container,
+                        config_wheel_style,
                         dialog
                     ],
                     scroll=True
@@ -274,7 +317,6 @@ def main(page: ft.Page):
     #Add views to page
     def route_change(e):
         page.views.clear()
-        # wheel.is_mounted = False  # Set wheel.is_mounted to False when changing routes
         page.views.append(view1)
         if page.route == "/ruleta":
             page.views.append(view2)
