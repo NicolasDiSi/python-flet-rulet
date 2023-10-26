@@ -152,8 +152,8 @@ class SliderExample(ft.UserControl):
         if value is not None:
             self.text.value = str(round(value * self.max_value))
             self.slider.value = value
-            self.slider.update()
-            self.text.update()
+            # self.slider.update()
+            # self.text.update()
 
     @property
     def string_value(self):
@@ -308,16 +308,16 @@ class CongratulationsDialog(ft.AlertDialog):
         self.open = False
         e.control.page.update()
         
-class Control:
-    def __init__(self, obj):
-        self.obj = obj
-        self.sliders = {}
+# class Control:
+#     def __init__(self, obj):
+#         self.obj = obj
+#         self.sliders = {}
 
-    def add_slider(self, prop_name, unit):
-        slider = SliderExample(unit)
-        slider.max_value = getattr(self.obj, prop_name)
-        self.sliders[prop_name] = slider
+#     def add_slider(self, prop_name, unit):
+#         slider = SliderExample(unit)
+#         slider.max_value = getattr(self.obj, prop_name)
+#         self.sliders[prop_name] = slider
 
-    def update_sliders(self):
-        for prop_name, slider in self.sliders.items():
-            setattr(self.obj, prop_name, slider.value)
+#     def update_sliders(self):
+#         for prop_name, slider in self.sliders.items():
+#             setattr(self.obj, prop_name, slider.value)
