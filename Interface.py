@@ -52,10 +52,11 @@ class FilePickerExample(ft.UserControl):
         self.selected_files.value = (
             ", ".join(map(lambda f: f.name, e.files)) if e.files else "Cancelado!"
         )
-        self.selected_files.update()
         if callable(self.callback):
             # print(self.callback)
             self.callback()
+            
+        self.selected_files.update()
     
     def save_file(self):
         self.file_picker.save_file(
@@ -152,8 +153,6 @@ class SliderExample(ft.UserControl):
         if value is not None:
             self.text.value = str(round(value * self.max_value))
             self.slider.value = value
-            # self.slider.update()
-            # self.text.update()
 
     @property
     def string_value(self):
@@ -321,3 +320,4 @@ class CongratulationsDialog(ft.AlertDialog):
 #     def update_sliders(self):
 #         for prop_name, slider in self.sliders.items():
 #             setattr(self.obj, prop_name, slider.value)
+
