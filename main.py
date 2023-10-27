@@ -29,9 +29,26 @@ class OptionForm(ft.UserControl):
         self.ref = self
         self.img_path = None
         self.prob_field = SliderExample()
-        self.del_instance = ft.IconButton( icon=ft.icons.DELETE_FOREVER_ROUNDED, on_click=self.remove_widget, data=0 )
         self.container = parent
-
+        self.selected_files = ft.Text(width=105)
+        #Buttons to delete images or the instance
+        self.del_instance = ft.IconButton( icon=ft.icons.DELETE_FOREVER_ROUNDED, on_click=self.remove_widget, data=0 )
+        self.del_image = ft.IconButton( icon=ft.icons.CLOSE_ROUNDED, on_click=self.remove_image)
+        
+        #FilePicker for images
+        self.file_dialog = ft.FilePicker(self,on_result=self.pick_files_result)
+        self.file_dialog.initial_directory = self.img_path
+        self.image_field = ft.Row(
+                [
+                    ft.ElevatedButton(
+                        "Selecciona imagen",
+                        icon=ft.icons.UPLOAD_FILE,
+                        on_click=self.pick_files,
+                    ),
+                    self.selected_files
+                ]
+            )
+        
     def remove_widget(self,e):
         # e.control.page.remove()
         
@@ -42,36 +59,41 @@ class OptionForm(ft.UserControl):
                 self.container.controls.remove(control)
         e.control.page.update()
         
-    def build(self):
-        selected_files = ft.Text()
-        def pick_files_result(e: ft.FilePickerResultEvent):
-            selected_files.value = (
-                ", ".join(map(lambda f: f.name, e.files)) if e.files else "Cancelled!"
-            )
-            selected_files.update()
+    def remove_image(self,e):        
+        #Removes image from FilePicker
+        if self.file_dialog.result != None:
+            self.file_dialog.result.files.clear()
+        self.selected_files.value = ''
+        self.selected_files.update()
+        
+    def pick_files_result(self,e: ft.FilePickerResultEvent):
+        self.selected_files.value = (
+            ", ".join(map(lambda f: f.name, e.files)) if e.files else "Cancelled!"
+        )
+        self.selected_files.update()
             
-        self.file_dialog = ft.FilePicker(self,on_result=pick_files_result)
-        self.file_dialog.initial_directory = self.img_path
-        self.image_field = ft.Row(
-                [
-                    ft.ElevatedButton(
-                        "Selecciona imagen",
-                        icon=ft.icons.UPLOAD_FILE,
-                        on_click=lambda _: self.file_dialog.pick_files(
-                            allowed_extensions=['jpeg','jpg','png','svg','gif'],
-                            file_type=ft.FilePickerFileType.IMAGE
-                        ),
-                    ),
-                    selected_files
-                ]
-            )
+        
+    def pick_files(self,e):
+        self.file_dialog.pick_files(
+            allowed_extensions=['jpeg','jpg','png','svg','gif'],
+            file_type=ft.FilePickerFileType.IMAGE
+        )
+        
+    def build(self):
+        
+        image_row = ft.Row(
+            [
+                self.image_field,
+                self.del_image,
+            ]
+        )
         
         return ft.Column( 
             [
                 self.name_field,
                 self.color_picker,
                 self.file_dialog,
-                self.image_field,
+                image_row,
                 self.prob_field,
                 self.del_instance
             ],
@@ -190,14 +212,20 @@ def main(page: ft.Page):
         last_option = normalize_value(overlay.controls.__getitem__(-1).controls.__getitem__(0).controls.__getitem__(0).value)
         
     add_button = ft.ElevatedButton("Añadir Opciones",on_click=add_options)
+    
     #First Row on view 1
-    input_row = ft.Row(
+    INPUT_ROW = ft.Row(
             [
-                num_options,
-                add_button,
-                config_load,
-                load_from_file
+                ft.Row([
+                    num_options,
+                    add_button,
+                ]),
+                ft.Row([
+                    load_from_file,
+                    config_load,
+                ])
             ],
+            wrap=True,
             spacing=10,
             run_spacing=10,
         )
@@ -292,7 +320,7 @@ def main(page: ft.Page):
                 "/",
                 [
                     ft.AppBar(title=ft.Text("Configuración"), bgcolor=ft.colors.SURFACE_VARIANT),
-                    input_row,
+                    INPUT_ROW,
                     overlay,
                     ft.Row([
                         submit_button,
