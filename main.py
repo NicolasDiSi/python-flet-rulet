@@ -50,8 +50,7 @@ class OptionForm(ft.UserControl):
             )
         
     def remove_widget(self,e):
-        # e.control.page.remove()
-        
+
         #Removes itself from the overlay
         for control in self.container.controls:
                 
@@ -106,6 +105,16 @@ class OptionForm(ft.UserControl):
 def main(page: ft.Page):
     page.title = "Define tu ruleta"
     page.vertical_alignment = ft.MainAxisAlignment.CENTER
+    
+    def on_keyboard(e: ft.KeyboardEvent):
+        if e.ctrl and e.key == 'F':
+            page.window_full_screen = True
+            page.update()
+        if e.key == 'Escape':
+            page.window_full_screen = False
+            page.update()
+    
+    page.on_keyboard_event = on_keyboard
     
     #Parse all the data found inside the overlay
     def submit_form():
@@ -360,8 +369,7 @@ def main(page: ft.Page):
     page.on_route_change = route_change
     page.on_view_pop = view_pop
 
-    page.go(page.route)
-    
+    page.go(page.route)    
     num_options.focus()
     
         
