@@ -175,6 +175,7 @@ class SliderExample(ft.UserControl):
 class Wheel:
     def __init__(self,radius=200, badge_size=100,center_space_radius=40,data=[]):
         self.data = data
+        self.data_hashes = None
         
         #Properties
         self.badge_size = badge_size
@@ -193,16 +194,16 @@ class Wheel:
             sections=[],
             sections_space=0,
             center_space_radius=center_space_radius,
-            expand=True
+            rotate=ft.transform.Rotate(0),
+            animate_rotation=self.animate_rotation,
+            expand=True,
         )
         
         self.container = ft.Container(
             self.chart,
-            rotate=ft.transform.Rotate(0),
-            animate_rotation=self.animate_rotation,
             alignment=ft.alignment.center,
             height=self.container_height*2,
-            on_click=self.animate
+            on_click=self.animate,
         )
     
         
@@ -214,11 +215,11 @@ class Wheel:
     
     @property
     def on_animation_end(self):
-        return self.container.on_animation_end
+        return self.chart.on_animation_end
     #Setter property for the function called on_animation_end
     @on_animation_end.setter
     def on_animation_end(self,value):
-        self.container.on_animation_end = value
+        self.chart.on_animation_end = value
     
     @property
     def data(self):
@@ -232,45 +233,60 @@ class Wheel:
         self.relevant_size = ~self.relevant_size
         
     def update_sections(self,force=False):
+        
         # Convert data to hashable form
-        data_hashes = [hash(tuple(item.values())) for item in self.data]
+        self.data_hashes = [hash(tuple(item.values())) for item in self.data]
 
         # Only update the sections if the data has changed
-        if data_hashes != self.prev_data_hashes or force == True:
+        if self.data_hashes != self.prev_data_hashes or force == True:
             # Update the sections
             self.sections = self.create_sections()
-            self.chart.sections = self.sections
             
             if self.is_mounted:
                 self.chart.update()
                 self.container.update()
 
             # Store the current data hashes for the next update
-            self.prev_data_hashes = data_hashes
+            self.prev_data_hashes = self.data_hashes
+            
+    #Creates each section of the PieChart
+    def create_section(self, item):
+        badge = self.create_badge(item["image"], self.badge_size) if item["image"] else None
+        color = item["color"]
+        size = 1 if not self.relevant_size else item["probability"]
 
+        return ft.PieChartSection(
+            size,
+            title=item["title"],
+            color=color,
+            radius=self.radius,
+            badge=badge,
+            badge_position=0.5,
+        )
+        
     def create_sections(self):
         sections = []
-        # print(data_hashes)
-        for i, item in enumerate(self.data):
-            # Create a new section if the previous data doesn't exist
-            if self.prev_data_hashes is None or i not in self.prev_data_hashes:
-                
-                badge = self.create_badge(item["image"], self.badge_size) if item["image"] != None else None
-                color = item["color"]
-                size = 1 if self.relevant_size == False else item["probability"]
-                
-                section = ft.PieChartSection(
-                    size,
-                    title=item["title"],
-                    color=color,
-                    radius=self.radius,
-                    badge=badge,
-                    badge_position=0.5,
-                )
-                sections.append(section)
-                
-        return sections
 
+        for index, item in enumerate(self.data):
+            # Create a new section if the previous data doesn't exist or if a section doesn't already exist at the corresponding index
+            if self.prev_data_hashes is None or index not in self.prev_data_hashes:
+                section = self.create_section(item)
+                sections.append(section)
+                # Insert the new section at the corresponding index in self.chart.sections
+                if len(self.chart.sections) > index:
+                    self.chart.sections[index] = section
+                else:
+                    self.chart.sections.append(section)
+
+            # Update the section if the corresponding values don't match
+            if self.data_hashes and self.prev_data_hashes and index in self.prev_data_hashes and self.prev_data_hashes[index] != self.data_hashes[index]:
+                print('updating')
+                section = self.create_section(item)
+                self.chart.sections[index] = section
+
+        if self.prev_data_hashes is None:
+            self.chart.sections = sections
+            
     #This method is used to setup an image as a badge placed on the chart    
     def create_badge(self, src, size):
         return ft.Container(
@@ -283,10 +299,10 @@ class Wheel:
     def hex_to_rgb(self, hex:str):
         hex_value = hex.lstrip('#')
         return tuple(int(hex_value[i:i+2], 16) for i in (0, 2, 4))
-    #This changes the angle property of the container, we take advantage of Flet dynamic updates here
+    #This changes the angle property of the container, we take advantage of Flet dynamic updates
     def animate(self, e):
-        self.container.rotate.angle += 360
-        self.container.update()
+        self.chart.rotate.angle += 180
+        e.control.page.update()
         
         
 #Alert Dialog that is shown when winning
@@ -306,18 +322,3 @@ class CongratulationsDialog(ft.AlertDialog):
     def close(self, e):
         self.open = False
         e.control.page.update()
-        
-# class Control:
-#     def __init__(self, obj):
-#         self.obj = obj
-#         self.sliders = {}
-
-#     def add_slider(self, prop_name, unit):
-#         slider = SliderExample(unit)
-#         slider.max_value = getattr(self.obj, prop_name)
-#         self.sliders[prop_name] = slider
-
-#     def update_sliders(self):
-#         for prop_name, slider in self.sliders.items():
-#             setattr(self.obj, prop_name, slider.value)
-
