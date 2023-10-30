@@ -61,12 +61,12 @@ class FilePickerExample(ft.UserControl):
     def save_file(self):
         self.file_picker.save_file(
             "Guardar Archivo",
+            file_name="wheel.json",
             allowed_extensions=self.allowed_extensions,
-            file_type= ft.FilePickerFileType.CUSTOM,
+            file_type= ft.FilePickerFileType.CUSTOM
         )
         
     def save_file_result(self, e: ft.FilePickerResultEvent):
-        
         if e.path:
             file_name = os.path.basename(e.control.result.path)
             if not file_name.endswith('.json'):
@@ -75,6 +75,11 @@ class FilePickerExample(ft.UserControl):
                 self.selected_files.value = 'Error: The file must have a .json extension'
                 self.selected_files.update()
                 return
+            
+            # Check if the file exists
+            if not os.path.exists(e.path):
+                # If it does not exist, create it
+                open(e.path, 'w').close()
             
             with open(e.path, 'w') as f:
                 data = self.data
@@ -93,7 +98,11 @@ class FilePickerExample(ft.UserControl):
 
     @button.setter
     def button(self, value):
-        self._button = value 
+        self._button = value
+        
+    def _before_build_command(self):
+        super()._before_build_command()
+        
     
     def build(self):
         return ft.Row(
@@ -126,7 +135,6 @@ class SliderExample(ft.UserControl):
         
         self.text.update()
         self.slider.update()
-        e.control.page.update()
         
     #Normalizes string values into valid float values
     def normalize_value(self, value):
@@ -305,6 +313,65 @@ class Wheel:
         e.control.page.update()
         
         
+class KeyBoardKey(ft.Container):
+    def __init__(self,icon:str = None,text:str = None):
+        super().__init__()
+        self.content = KeyBoardKeyRow(icon,text)
+        self.border = ft.border.all(1, ft.colors.WHITE54)
+        self.border_radius = 10
+        self.bgcolor = "0x09000000"
+        self.padding = 10
+        
+class KeyBoardKeyRow(ft.Row):
+    def __init__(self, icon:str = None,text:str = None):
+        super().__init__()
+        self.controls.append(ft.Icon(icon)) if icon != None else None
+        self.controls.append(ft.Text(text)) if text != None else None
+       
+#Alert Dialog to display Keyboard shortcuts
+class ShortcutsDialog(ft.AlertDialog):
+    def __init__(self, title=""):
+        super().__init__(
+            title=ft.Text(value=title),
+            content=ft.Column([
+                    ft.Row([
+                        KeyBoardKey(text="Ctrl"),
+                        ft.Text("+"),
+                        KeyBoardKey(text="F"),
+                        ft.Text("Full Screen"),
+                    ]),
+                    ft.Row([
+                        KeyBoardKey(text="Esc"),
+                        ft.Text("Exit Full Screen"),
+                    ]),
+                    ft.Row([
+                        KeyBoardKey("SPACE_BAR","Space Bar"),
+                        ft.Text("Spin the Wheel"),
+                    ]),
+                    ft.Row([
+                        KeyBoardKey("SUBDIRECTORY_ARROW_LEFT","Enter"),
+                        ft.Text("Load Wheel Configuration"),
+                    ]),
+                    ft.Row([
+                        KeyBoardKey("SYNC_ALT","Tab"),
+                        ft.Text("Switch Between Routes"),
+                    ]),
+                ],
+                wrap=True,
+                spacing=10,
+                run_spacing=10
+            ),
+            actions=[
+                ft.TextButton(
+                    text="Continuar",
+                    on_click=self.close
+                )
+            ]
+        )
+
+    def close(self, e):
+        self.open = False
+        e.control.page.update()
 #Alert Dialog that is shown when winning
 class CongratulationsDialog(ft.AlertDialog):
     def __init__(self, title="", image=None):

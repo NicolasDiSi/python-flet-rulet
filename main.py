@@ -8,7 +8,7 @@ import json
 import os
 
 #Interfaz
-from Interface import CongratulationsDialog, FilePickerExample, SliderExample, Wheel, normalize_value
+from Interface import CongratulationsDialog, FilePickerExample, ShortcutsDialog, SliderExample, Wheel, normalize_value
 
 def generate_random_color(format):
     r = random.randint(0, 255)
@@ -111,14 +111,26 @@ class OptionForm(ft.UserControl):
 def main(page: ft.Page):
     page.title = "Define tu ruleta"
     page.vertical_alignment = ft.MainAxisAlignment.CENTER
+    ROUTE = ["/","/ruleta"]
     
     def on_keyboard(e: ft.KeyboardEvent):
+        full_screen = page.window_full_screen
         if e.ctrl and e.key == 'F':
-            page.window_full_screen = True
+            page.window_full_screen = not(full_screen)
             page.update()
         if e.key == 'Escape':
             page.window_full_screen = False
             page.update()
+        if e.key == 'Space' and  page.route == ROUTE[1]:
+            Wheel.animate()
+        if e.key == 'Enter' and page.route == ROUTE[0]:
+            load_wheel_configuration(e)
+        elif e.key == 'Tab':
+            if page.route == ROUTE[0]:
+                load_wheel_configuration(e)
+            elif page.route == ROUTE[1]:
+                go_to_configuration(e)
+         
     
     page.on_keyboard_event = on_keyboard
     
@@ -228,13 +240,25 @@ def main(page: ft.Page):
         
     add_button = ft.ElevatedButton("Añadir Opciones",on_click=add_options)
     
+    keyboard_shortcuts = ShortcutsDialog("Atajos del Teclado")
+    def open_shortcuts(e):
+        keyboard_shortcuts.open = True
+        e.control.page.update()
+        
+    show_shortcuts = ft.ElevatedButton("Atajos del Teclado",icon=ft.icons.KEYBOARD,on_click=open_shortcuts)
     #First Row on view 1
     INPUT_ROW = ft.Row(
             [
                 ft.Row([
-                    num_options,
-                    add_button,
-                ]),
+                    ft.Row([
+                        num_options,
+                        add_button
+                    ]),
+                    keyboard_shortcuts,
+                    show_shortcuts,
+                ],
+                alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                ),
                 ft.Row([
                     load_from_file,
                     config_load,
@@ -252,10 +276,9 @@ def main(page: ft.Page):
         # print(wheel.data)
         
         if wheel.data != None:
-            page.go("/ruleta")
+            page.go(ROUTE[1])
             #This wheel update the chart after rendering the view
             wheel.update_sections()
-        page.update()
     
     #This opens the Dialog and shows the title of the winning option based on it's probability
     def get_selected_option(e):
@@ -284,6 +307,8 @@ def main(page: ft.Page):
     #Wheel Customization
     img_size_slider = SliderExample('px')
     img_size_slider.max_value = 200
+    img_size_slider.value = '100'
+    
     def size_change():
         wheel.badge_size = img_size_slider.string_value
         # print(wheel.badge_size)
@@ -294,6 +319,7 @@ def main(page: ft.Page):
     
     duration_slider = SliderExample('segundos')
     duration_slider.max_value = 20
+    duration_slider.value = '10'
     
     def duration_change():
         wheel.set_duration(duration_slider.string_value*1000)
@@ -305,6 +331,7 @@ def main(page: ft.Page):
     
     radius_slider = SliderExample('px')
     radius_slider.max_value = 600
+    radius_slider.value = '300'
     
     def radius_change():
         wheel.radius = radius_slider.string_value
@@ -327,12 +354,10 @@ def main(page: ft.Page):
                     )
     
     def go_to_configuration(e):
-        page.go("/")
-        page.update()        
-    
+        page.go(ROUTE[0])       
     
     view1= ft.View(
-                "/",
+                ROUTE[0],
                 [
                     ft.AppBar(title=ft.Text("Configuración"), bgcolor=ft.colors.SURFACE_VARIANT),
                     INPUT_ROW,
@@ -345,7 +370,7 @@ def main(page: ft.Page):
                 scroll=True
             )
     view2 = ft.View(
-                    "/ruleta",
+                    ROUTE[1],
                     [
                         ft.AppBar(title=ft.Text("Ruleta"), bgcolor=ft.colors.SURFACE_VARIANT),
                         ft.ElevatedButton("Ir a Configuración", on_click=go_to_configuration,icon=ft.icons.SETTINGS,top=True),
@@ -360,8 +385,9 @@ def main(page: ft.Page):
     #Add views to page
     def route_change(e):
         page.views.clear()
-        page.views.append(view1)
-        if page.route == "/ruleta":
+        if page.route == ROUTE[0]:
+            page.views.append(view1)
+        if page.route == ROUTE[1]:
             page.views.append(view2)
             wheel.is_mounted = True
         page.update()
