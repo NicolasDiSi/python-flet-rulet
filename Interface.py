@@ -1,4 +1,3 @@
-import random
 import flet as ft
 import json
 import os
@@ -184,6 +183,7 @@ class Wheel:
     def __init__(self,radius=200, badge_size=100,center_space_radius=40,data=[]):
         self.data = data
         self.data_hashes = None
+        self.animation_started = False
         
         #Properties
         self.badge_size = badge_size
@@ -217,10 +217,24 @@ class Wheel:
         
         self.sections = []
    
-    def set_duration(self,value):
-        self.animate_rotation.duration = value
-        self.container.animate_rotation = self.animate_rotation
+    def set_duration(self,value = None):
+        #Update the value of duration if valid
+        if value != None:
+            self.duration = value
+            self.animate_rotation.duration = value
+        else:
+            #Set the duration equal to the last valid value
+            self.animate_rotation.duration = self.duration
+        self.chart.animate_rotation = self.animate_rotation
     
+    def stop(self):
+        self.animate_rotation.duration = 0
+        self.chart.rotate.angle = 0
+        self.chart.animate_rotation = self.animate_rotation
+        self.animation_started = False
+        self.chart.update()
+        self.set_duration()
+        
     @property
     def on_animation_end(self):
         return self.chart.on_animation_end
@@ -310,7 +324,8 @@ class Wheel:
     #This changes the angle property of the container, we take advantage of Flet dynamic updates
     def animate(self, e):
         self.chart.rotate.angle += 180
-        e.control.page.update()
+        self.chart.update()
+        self.animation_started = True
         
         
 class KeyBoardKey(ft.Container):
@@ -346,7 +361,7 @@ class ShortcutsDialog(ft.AlertDialog):
                     ]),
                     ft.Row([
                         KeyBoardKey("SPACE_BAR","Space Bar"),
-                        ft.Text("Spin the Wheel"),
+                        ft.Text("Spin / Stop the Wheel"),
                     ]),
                     ft.Row([
                         KeyBoardKey("SUBDIRECTORY_ARROW_LEFT","Enter"),

@@ -114,6 +114,7 @@ def main(page: ft.Page):
     ROUTE = ["/","/ruleta"]
     
     def on_keyboard(e: ft.KeyboardEvent):
+        # print(e.key)
         full_screen = page.window_full_screen
         if e.ctrl and e.key == 'F':
             page.window_full_screen = not(full_screen)
@@ -121,8 +122,11 @@ def main(page: ft.Page):
         if e.key == 'Escape':
             page.window_full_screen = False
             page.update()
-        if e.key == 'Space' and  page.route == ROUTE[1]:
-            Wheel.animate()
+        if e.key == ' ' and  page.route == ROUTE[1]:
+            if wheel.animation_started == False:
+                wheel.animate(e)
+            else:
+                wheel.stop()
         if e.key == 'Enter' and page.route == ROUTE[0]:
             load_wheel_configuration(e)
         elif e.key == 'Tab':
@@ -283,6 +287,7 @@ def main(page: ft.Page):
     #This opens the Dialog and shows the title of the winning option based on it's probability
     def get_selected_option(e):
         options = wheel.data
+        wheel.animation_started = False
         # Extract the options and probabilities
         choices = [option for option in options]
         weights = [option["probability"] for option in options]
