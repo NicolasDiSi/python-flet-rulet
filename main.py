@@ -77,7 +77,13 @@ class OptionForm(ft.UserControl):
             allowed_extensions=['jpeg','jpg','png','svg','gif'],
             file_type=ft.FilePickerFileType.IMAGE
         )
-        
+    
+    def _before_build_command(self):
+        super()._before_build_command()
+        # called every time on self.update()
+        #This helps FilePicker update and maintain it's own state, besides updating the control reference after switching views
+        self.build()
+         
     def build(self):
         
         image_row = ft.Row(
