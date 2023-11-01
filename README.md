@@ -1,4 +1,4 @@
-# Wheel of Fortune Configurator
+# Wheel of Fortune
 
 This program allows you to create and customize your own wheel of fortune with various features. You can:
 
