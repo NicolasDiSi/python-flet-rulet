@@ -1,8 +1,7 @@
 import flet as ft
 from flet_contrib.color_picker import ColorPicker
+from flet_contrib.color_picker.src.utils import rgb2hex
 
-
-import colour
 import random
 import json
 import os
@@ -15,7 +14,7 @@ def generate_random_color(format):
     g = random.randint(0, 255)
     b = random.randint(0, 255)
     if format == 'hex':
-        return colour.rgb2hex((r,g,b))
+        return rgb2hex((r,g,b))
     else:
         return tuple(r,g,b)
 
