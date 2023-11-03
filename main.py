@@ -47,13 +47,13 @@ class OptionForm(ft.UserControl):
                     self.selected_files
                 ]
             )
-        
+       
     def remove_widget(self,e):
-
-        #Removes itself from the overlay
-        for control in self.container.controls:
-                
+        #Search inside the overlay
+        for index,control in enumerate(self.container.controls):
             if control.ref == self.ref:
+                    
+                #Removes itself from the overlay
                 self.container.controls.remove(control)
         e.control.page.update()
         
@@ -94,12 +94,14 @@ class OptionForm(ft.UserControl):
         
         return ft.Column( 
             [
+                ft.Row([
                 self.name_field,
+                self.del_instance,
+                ]),
                 self.color_picker,
                 self.file_dialog,
                 image_row,
                 self.prob_field,
-                self.del_instance
             ],
             ref=self.ref,
             spacing=10,
@@ -273,6 +275,7 @@ def main(page: ft.Page):
         )
     #Dialog used to display the winning option
     dialog = CongratulationsDialog()
+    wheel = Wheel(300, 100)
     
     def load_wheel_configuration(e):
         wheel.data = submit_form()
@@ -302,7 +305,7 @@ def main(page: ft.Page):
         dialog.open = True
         page.update()
     
-    wheel = Wheel(300, 100)
+    
     #Show Dialog after animation
     wheel.on_animation_end = get_selected_option
     
