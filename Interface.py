@@ -2,6 +2,13 @@ import flet as ft
 import json
 import os
 
+
+def is_member(value, iterable):
+     for item in iterable:
+         if value is item or value == item:
+             return True
+     return False
+ 
 #Normalize the values to handle text inputs throughout the app
 def normalize_value(value):
         if isinstance(value, str) and str.isdigit(value):
@@ -182,7 +189,7 @@ class SliderExample(ft.UserControl):
 class Wheel:
     def __init__(self,radius=200, badge_size=100,center_space_radius=40,data=[]):
         self.data = data
-        self.data_hashes = None
+        self.new_data_hash = None
         self.animation_started = False
         
         #Properties
@@ -216,7 +223,7 @@ class Wheel:
     
         
         self.sections = []
-   
+       
     def set_duration(self,value = None):
         #Update the value of duration if valid
         if value != None:
@@ -257,10 +264,10 @@ class Wheel:
     def update_sections(self,force=False):
         
         # Convert data to hashable form
-        self.data_hashes = [hash(tuple(item.values())) for item in self.data]
+        self.new_data_hash = [hash(tuple(item.values())) for item in self.data]
 
         # Only update the sections if the data has changed
-        if self.data_hashes != self.prev_data_hashes or force == True:
+        if self.new_data_hash != self.prev_data_hashes or force == True:
             # Update the sections
             self.sections = self.create_sections()
             
@@ -269,7 +276,7 @@ class Wheel:
                 self.container.update()
 
             # Store the current data hashes for the next update
-            self.prev_data_hashes = self.data_hashes
+            self.prev_data_hashes = self.new_data_hash
             
     #Creates each section of the PieChart
     def create_section(self, item):
@@ -287,28 +294,18 @@ class Wheel:
         )
         
     def create_sections(self):
-        sections = []
+        # Remove sections that are no longer needed
+        self.chart.sections = [section for index, section in enumerate(self.chart.sections) if index in self.data]
 
+        # Create new sections or update existing ones
         for index, item in enumerate(self.data):
-            # Create a new section if the previous data doesn't exist or if a section doesn't already exist at the corresponding index
-            if self.prev_data_hashes is None or index not in self.prev_data_hashes:
-                section = self.create_section(item)
-                sections.append(section)
-                # Insert the new section at the corresponding index in self.chart.sections
-                if len(self.chart.sections) > index:
-                    self.chart.sections[index] = section
-                else:
-                    self.chart.sections.append(section)
-
-            # Update the section if the corresponding values don't match
-            if self.data_hashes and self.prev_data_hashes and index in self.prev_data_hashes and self.prev_data_hashes[index] != self.data_hashes[index]:
+            section = self.create_section(item)
+            if index < len(self.chart.sections) and self.new_data_hash[index] != self.prev_data_hashes[index]:
                 print('updating')
-                section = self.create_section(item)
                 self.chart.sections[index] = section
-
-        if self.prev_data_hashes is None:
-            self.chart.sections = sections
-            
+            else:
+                self.chart.sections.append(section)
+                
     #This method is used to setup an image as a badge placed on the chart    
     def create_badge(self, src, size):
         return ft.Container(
