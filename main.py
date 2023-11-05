@@ -47,7 +47,7 @@ class OptionForm(ft.UserControl):
                     self.selected_files
                 ]
             )
-       
+    
     def remove_widget(self,e):
         #Search inside the overlay
         for index,control in enumerate(self.container.controls):
@@ -154,7 +154,7 @@ def main(page: ft.Page):
                 data = {
                     'title': control.name_field.value,
                     'color': control.color_picker.color,
-                    'image': image, # This will be the path to the uploaded file
+                    'image': image if control.img_path == None else control.img_path, # This will be the path to the uploaded file
                     'probability': control.prob_field.value
                 }
                 
@@ -201,6 +201,7 @@ def main(page: ft.Page):
                     form.name_field.value = data['title']
                     form.color_picker.color = data['color']
                     form.img_path = data['image']
+                    form.selected_files.value = data['image']
                     form.prob_field.value = data['probability']
                     overlay.controls.append(form)
             page.update()
@@ -228,7 +229,7 @@ def main(page: ft.Page):
         
         if last_option != None and position > 0:
             #Actualizamos el valor antes de asignarlo
-            last_option = normalize_value(overlay.controls.__getitem__(-1).controls.__getitem__(0).controls.__getitem__(0).value)
+            last_option = normalize_value(overlay.controls.__getitem__(-1).controls.__getitem__(0).controls.__getitem__(0).controls.__getitem__(0).value)
             position = last_option if last_option != None else last_value
 
         if current_value >= 1:
@@ -241,7 +242,7 @@ def main(page: ft.Page):
         overlay.update()
         
         #Gets the value from the first element (the title) inside the last column
-        last_option = normalize_value(overlay.controls.__getitem__(-1).controls.__getitem__(0).controls.__getitem__(0).value)
+        last_option = normalize_value(overlay.controls.__getitem__(-1).controls.__getitem__(0).controls.__getitem__(0).controls.__getitem__(0).value)
         
     add_button = ft.ElevatedButton("Añadir Opciones",on_click=add_options)
     
@@ -301,7 +302,8 @@ def main(page: ft.Page):
         dialog.title = ft.Text(f"La Opción Ganadora fue! {selected_option['title']}",text_align=ft.TextAlign.CENTER)
         if selected_option['image'] != None:
             dialog.content = ft.Image(selected_option['image'],fit=ft.ImageFit.CONTAIN)
-            
+        else:
+            dialog.content = None
         dialog.open = True
         page.update()
     

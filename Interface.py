@@ -280,7 +280,7 @@ class Wheel:
             
     #Creates each section of the PieChart
     def create_section(self, item):
-        badge = self.create_badge(item["image"], self.badge_size) if item["image"] else None
+        badge = self.create_badge(item["image"], self.badge_size)
         color = item["color"]
         size = 1 if not self.relevant_size else item["probability"]
 
@@ -308,6 +308,9 @@ class Wheel:
                 
     #This method is used to setup an image as a badge placed on the chart    
     def create_badge(self, src, size):
+        if src == None or not os.path.exists(src):
+            return None
+        
         return ft.Container(
             ft.Image(src),
             width=size,
