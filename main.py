@@ -243,9 +243,16 @@ def main(page: ft.Page):
         
         #Gets the value from the first element (the title) inside the last column
         last_option = normalize_value(overlay.controls.__getitem__(-1).controls.__getitem__(0).controls.__getitem__(0).controls.__getitem__(0).value)
-        
+     
     add_button = ft.ElevatedButton("Añadir Opciones",on_click=add_options)
     
+    def randomize_positions(e):
+        fields = overlay.controls
+        random.shuffle(fields)
+        overlay.update()
+    
+    randomize_button = ft.ElevatedButton("Randomizar",on_click=randomize_positions,icon=ft.icons.SHUFFLE_ON_ROUNDED)
+
     keyboard_shortcuts = ShortcutsDialog("Atajos del Teclado")
     def open_shortcuts(e):
         keyboard_shortcuts.open = True
@@ -258,7 +265,8 @@ def main(page: ft.Page):
                 ft.Row([
                     ft.Row([
                         num_options,
-                        add_button
+                        add_button,
+                        randomize_button
                     ]),
                     keyboard_shortcuts,
                     show_shortcuts,
@@ -314,6 +322,7 @@ def main(page: ft.Page):
     spin_button = ft.ElevatedButton("Spin the Wheel!", on_click=wheel.animate)
     
     #Wheel Customization
+    #Slider to change the size of the images
     img_size_slider = SliderExample('px')
     img_size_slider.max_value = 200
     img_size_slider.value = '100'
@@ -326,6 +335,7 @@ def main(page: ft.Page):
         
     img_size_slider.callback = size_change
     
+    #Slider to change the duration of the animation
     duration_slider = SliderExample('segundos')
     duration_slider.max_value = 20
     duration_slider.value = '10'
@@ -338,6 +348,7 @@ def main(page: ft.Page):
         
     duration_slider.callback = duration_change
     
+    #Slider to change the radius of the circle
     radius_slider = SliderExample('px')
     radius_slider.max_value = 600
     radius_slider.value = '300'
@@ -351,6 +362,7 @@ def main(page: ft.Page):
         
     radius_slider.callback = radius_change
     
+    
     config_wheel_style = ft.Column( 
                         [
                             ft.Text("Tamaño máximo de las imágenes"),
@@ -358,7 +370,7 @@ def main(page: ft.Page):
                             ft.Text("Cuanto Dura la animación"),
                             duration_slider,
                             ft.Text("Radio de la ruleta"),
-                            radius_slider
+                            radius_slider,
                         ]
                     )
     
