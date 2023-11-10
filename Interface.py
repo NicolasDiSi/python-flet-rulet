@@ -1,4 +1,5 @@
-import flet as ft
+import math
+from flet import UserControl,FilePicker,icons,ElevatedButton,Text,FilePickerResultEvent,FilePickerFileType,colors,Slider,TextField,Row,Container,Image,transform,Rotate,animation,AnimationCurve,PieChart,alignment,PieChartSection,border,Icon,AlertDialog,Column,TextButton
 import json
 import os
 
@@ -23,24 +24,24 @@ def normalize_value(value):
         return value
 
 '''
-Render a button that opens it's own ft.FilePicker
+Render a button that opens it's own FilePicker
 Adds multiple functionalities such as:
 - Be able to switch between save_file and pick_file
 - Both modes have a callback argument that triggers on_result
 - You can Change the Button being display and its events
 - You can change most of the properties of the FilePicker object
 '''
-class FilePickerExample(ft.UserControl):
+class FilePickerExample(UserControl):
     def __init__(self,text="Cargar Archivo",allowed_extensions=['json'],callback=None,icon=None,data = None,file_name = None,save_file=False,**kwargs):
         super().__init__(**kwargs)
-        self.selected_files = ft.Text()
+        self.selected_files = Text()
         self.callback = callback
-        self.icon = icon if icon != None else ft.icons.UPLOAD_FILE if save_file == False else ft.icons.SAVE 
-        self.file_picker = ft.FilePicker(self,on_result=self.save_file_result if save_file == True else self.pick_files_result)
+        self.icon = icon if icon != None else icons.UPLOAD_FILE if save_file == False else icons.SAVE 
+        self.file_picker = FilePicker(self,on_result=self.save_file_result if save_file == True else self.pick_files_result)
         self.file_picker.file_name = file_name
         self.data = data
         self.allowed_extensions = allowed_extensions
-        self.button = ft.ElevatedButton(
+        self.button = ElevatedButton(
                    text,
                     icon=self.icon,
                     on_click=lambda _: self.save_file() if save_file == True else self.file_picker.pick_files()  ,
@@ -54,7 +55,7 @@ class FilePickerExample(ft.UserControl):
             on_result=self.pick_files_result
         )
     
-    def pick_files_result(self, e: ft.FilePickerResultEvent):
+    def pick_files_result(self, e: FilePickerResultEvent):
         self.selected_files.value = (
             ", ".join(map(lambda f: f.name, e.files)) if e.files else "Cancelado!"
         )
@@ -69,15 +70,15 @@ class FilePickerExample(ft.UserControl):
             "Guardar Archivo",
             file_name="wheel.json",
             allowed_extensions=self.allowed_extensions,
-            file_type= ft.FilePickerFileType.CUSTOM
+            file_type= FilePickerFileType.CUSTOM
         )
         
-    def save_file_result(self, e: ft.FilePickerResultEvent):
+    def save_file_result(self, e: FilePickerResultEvent):
         if e.path:
             file_name = os.path.basename(e.control.result.path)
             if not file_name.endswith('.json'):
-                self.selected_files.bgcolor = ft.colors.RED
-                self.selected_files.color = ft.colors.WHITE
+                self.selected_files.bgcolor = colors.RED
+                self.selected_files.color = colors.WHITE
                 self.selected_files.value = 'Error: The file must have a .json extension'
                 self.selected_files.update()
                 return
@@ -111,7 +112,7 @@ class FilePickerExample(ft.UserControl):
         
     
     def build(self):
-        return ft.Row(
+        return Row(
             [
                 self.file_picker,
                 self.button,
@@ -121,13 +122,13 @@ class FilePickerExample(ft.UserControl):
 '''
 Creates a Slider element with the option for a text field.
 '''    
-class SliderExample(ft.UserControl):
+class SliderExample(UserControl):
     def __init__(self,text='%',initial_value=0.1, show_text=True,**kwargs):
         super().__init__(**kwargs)
-        self.slider = ft.Slider(value=initial_value, on_change=self.on_change)
-        self.text = ft.TextField(value=str(round(initial_value*100)),width=100,on_change=self.on_change,max_length=4) if show_text else None
-        self.label = ft.Text(text)
-        self.row = ft.Row([self.slider, self.text,self.label] if show_text else [self.slider],spacing=10,run_spacing=10)
+        self.slider = Slider(value=initial_value, on_change=self.on_change)
+        self.text = TextField(value=str(round(initial_value*100)),width=100,on_change=self.on_change,max_length=4) if show_text else None
+        self.label = Text(text)
+        self.row = Row([self.slider, self.text,self.label] if show_text else [self.slider],spacing=10,run_spacing=10)
         self.min_value = 1
         self.max_value = 100
         self.callback = None
@@ -184,7 +185,22 @@ class SliderExample(ft.UserControl):
     
     def build(self):
         return self.row
-    
+
+
+#This class is used to setup an image as a badge placed on the chart    
+class Badge(Container):
+    def __init__(self,src:str = None,size:int = None):
+        super().__init__(
+            content = Image(src) if src != None and os.path.exists(src) else None,
+            width = size,
+            height = size,
+            animate = None,
+            animate_rotation = None,
+        )
+        
+    def _before_build_command(self):
+        return super()._before_build_command()
+       
 #Initializes the chart that will represent the Wheel of fortune
 class Wheel:
     def __init__(self,radius=200, badge_size=100,center_space_radius=40,data=[]):
@@ -193,6 +209,7 @@ class Wheel:
         self.animation_started = False
         
         #Properties
+        self.angle = 360
         self.badge_size = badge_size
         self.radius = radius
         self.duration = 10000
@@ -201,29 +218,28 @@ class Wheel:
         self.relevant_size = False
         self.container_height = self.radius+center_space_radius
         self.prev_data_hashes = None  # Store hashes of previous data
-        self.animate_rotation = ft.animation.Animation(duration=self.duration, curve=ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN)
+        self.animate_rotation = animation.Animation(duration=self.duration, curve=AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN)
         
         
         #We Declare the chart that will represent the wheel of fortune
-        self.chart = ft.PieChart(
+        self.chart = PieChart(
             sections=[],
             sections_space=0,
             center_space_radius=center_space_radius,
-            rotate=ft.transform.Rotate(0),
+            rotate=transform.Rotate(0),
             animate_rotation=self.animate_rotation,
             expand=True,
         )
         
-        self.container = ft.Container(
+        self.container = Container(
             self.chart,
-            alignment=ft.alignment.center,
+            alignment=alignment.center,
             height=self.container_height*2,
             on_click=self.animate,
         )
-    
-        
+
         self.sections = []
-       
+    
     def set_duration(self,value = None):
         #Update the value of duration if valid
         if value != None:
@@ -261,6 +277,80 @@ class Wheel:
     def switch_modes(self):
         self.relevant_size = ~self.relevant_size
         
+    def calculate_rotation_angles(self,starting_angle, ending_angle, steps):
+        # Convertir los ángulos a radianes
+        starting_angle_rad = math.radians(starting_angle)
+        ending_angle_rad = math.radians(ending_angle)
+
+        # Calcular el ángulo medio
+        mid_angle_rad = (starting_angle_rad + ending_angle_rad) / 2
+
+        # Calcular el ángulo de rotación para cada paso
+        rotation_angle_per_step = (ending_angle_rad - starting_angle_rad) / steps
+
+        return mid_angle_rad, math.degrees(rotation_angle_per_step)
+
+    def calculate_starting_ending_angles(self,index, steps):
+        # Calcular offset cuando lso valores son muy bajos
+        initial_rotation = 90
+        # Calcular el ángulo de inicio y el ángulo final
+        starting_angle = (360 / steps) * index + initial_rotation
+        ending_angle = (360 / steps) * (index + 1) + initial_rotation
+        return starting_angle, ending_angle
+    
+    #Creates each section of the PieChart
+    def create_section(self, item,index):
+        # Crear el badge
+        badge = Badge(item["image"], self.badge_size)
+        
+        if item["image"] != None:
+            steps = len(self.data)+1
+            #Modificamos la cantidad de pasos que toma el algoritmo en girar la imagen
+            if steps <= 4:
+                steps -= 1
+        
+            # Calcular el ángulo de inicio y el ángulo final
+            starting_angle, ending_angle = self.calculate_starting_ending_angles(index, steps)
+            
+            # Calcular el ángulo medio y el ángulo de rotación por paso
+            mid_angle, rotation_angle_per_step = self.calculate_rotation_angles(starting_angle, ending_angle, steps)
+
+            
+            # Rotar el badge en cada paso
+            if index != 0:
+                self.angle = mid_angle + math.radians(rotation_angle_per_step * index)
+            else:
+                # Calcular el ángulo de rotación para el paso actual
+                self.angle = mid_angle
+                
+            # Rotar el badge
+            badge.rotate = Rotate(self.angle, alignment.center)
+       
+        color = item["color"]
+        size = 1 if not self.relevant_size else item["probability"]
+        
+        return PieChartSection(
+            size,
+            title=item["title"],
+            color=color,
+            radius=self.radius,
+            badge=badge,
+            badge_position=0.8,
+        )
+        
+    def create_sections(self):
+        # Remove sections that are no longer needed
+        self.chart.sections = [section for index, section in enumerate(self.chart.sections) if index in self.data]
+
+        # Create new sections or update existing ones
+        for index, item in enumerate(self.data):
+            section = self.create_section(item,index)
+            if index < len(self.chart.sections) and self.new_data_hash[index] != self.prev_data_hashes[index]:
+                print('updating')
+                self.chart.sections[index] = section
+            else:
+                self.chart.sections.append(section)
+                
     def update_sections(self,force=False):
         
         # Convert data to hashable form
@@ -277,50 +367,13 @@ class Wheel:
 
             # Store the current data hashes for the next update
             self.prev_data_hashes = self.new_data_hash
-            
-    #Creates each section of the PieChart
-    def create_section(self, item):
-        badge = self.create_badge(item["image"], self.badge_size)
-        color = item["color"]
-        size = 1 if not self.relevant_size else item["probability"]
-
-        return ft.PieChartSection(
-            size,
-            title=item["title"],
-            color=color,
-            radius=self.radius,
-            badge=badge,
-            badge_position=0.5,
-        )
         
-    def create_sections(self):
-        # Remove sections that are no longer needed
-        self.chart.sections = [section for index, section in enumerate(self.chart.sections) if index in self.data]
-
-        # Create new sections or update existing ones
-        for index, item in enumerate(self.data):
-            section = self.create_section(item)
-            if index < len(self.chart.sections) and self.new_data_hash[index] != self.prev_data_hashes[index]:
-                print('updating')
-                self.chart.sections[index] = section
-            else:
-                self.chart.sections.append(section)
-                
-    #This method is used to setup an image as a badge placed on the chart    
-    def create_badge(self, src, size):
-        if src == None or not os.path.exists(src):
-            return None
-        
-        return ft.Container(
-            ft.Image(src),
-            width=size,
-            height=size,
-            animate=None
-        )
+    
     #Helper function to transform color values returns a tuple of RGB values
     def hex_to_rgb(self, hex:str):
         hex_value = hex.lstrip('#')
         return tuple(int(hex_value[i:i+2], 16) for i in (0, 2, 4))
+    
     #This changes the angle property of the container, we take advantage of Flet dynamic updates
     def animate(self, e):
         self.chart.rotate.angle += 180
@@ -328,48 +381,48 @@ class Wheel:
         self.animation_started = True
         
         
-class KeyBoardKey(ft.Container):
+class KeyBoardKey(Container):
     def __init__(self,icon:str = None,text:str = None):
         super().__init__()
         self.content = KeyBoardKeyRow(icon,text)
-        self.border = ft.border.all(1, ft.colors.WHITE54)
+        self.border = border.all(1, colors.WHITE54)
         self.border_radius = 10
         self.bgcolor = "0x09000000"
         self.padding = 10
         
-class KeyBoardKeyRow(ft.Row):
+class KeyBoardKeyRow(Row):
     def __init__(self, icon:str = None,text:str = None):
         super().__init__()
-        self.controls.append(ft.Icon(icon)) if icon != None else None
-        self.controls.append(ft.Text(text)) if text != None else None
+        self.controls.append(Icon(icon)) if icon != None else None
+        self.controls.append(Text(text)) if text != None else None
        
 #Alert Dialog to display Keyboard shortcuts
-class ShortcutsDialog(ft.AlertDialog):
+class ShortcutsDialog(AlertDialog):
     def __init__(self, title=""):
         super().__init__(
-            title=ft.Text(value=title),
-            content=ft.Column([
-                    ft.Row([
+            title=Text(value=title),
+            content=Column([
+                    Row([
                         KeyBoardKey(text="Ctrl"),
-                        ft.Text("+"),
+                        Text("+"),
                         KeyBoardKey(text="F"),
-                        ft.Text("Full Screen"),
+                        Text("Full Screen"),
                     ]),
-                    ft.Row([
+                    Row([
                         KeyBoardKey(text="Esc"),
-                        ft.Text("Exit Full Screen"),
+                        Text("Exit Full Screen"),
                     ]),
-                    ft.Row([
+                    Row([
                         KeyBoardKey("SPACE_BAR","Space Bar"),
-                        ft.Text("Spin / Stop the Wheel"),
+                        Text("Spin / Stop the Wheel"),
                     ]),
-                    ft.Row([
+                    Row([
                         KeyBoardKey("SUBDIRECTORY_ARROW_LEFT","Enter"),
-                        ft.Text("Load Wheel Configuration"),
+                        Text("Load Wheel Configuration"),
                     ]),
-                    ft.Row([
+                    Row([
                         KeyBoardKey("SYNC_ALT","Tab"),
-                        ft.Text("Switch Between Routes"),
+                        Text("Switch Between Routes"),
                     ]),
                 ],
                 wrap=True,
@@ -377,7 +430,7 @@ class ShortcutsDialog(ft.AlertDialog):
                 run_spacing=10
             ),
             actions=[
-                ft.TextButton(
+                TextButton(
                     text="Continuar",
                     on_click=self.close
                 )
@@ -388,13 +441,13 @@ class ShortcutsDialog(ft.AlertDialog):
         self.open = False
         e.control.page.update()
 #Alert Dialog that is shown when winning
-class CongratulationsDialog(ft.AlertDialog):
+class CongratulationsDialog(AlertDialog):
     def __init__(self, title="", image=None):
         super().__init__(
-            title=ft.Text(value=title),
+            title=Text(value=title),
             content=image if image is not None else None,
             actions=[
-                ft.TextButton(
+                TextButton(
                     text="Continuar",
                     on_click=self.close
                 )
@@ -404,3 +457,4 @@ class CongratulationsDialog(ft.AlertDialog):
     def close(self, e):
         self.open = False
         e.control.page.update()
+
