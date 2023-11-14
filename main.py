@@ -1,3 +1,4 @@
+import time
 import flet as ft
 from flet_contrib.color_picker import ColorPicker
 from flet_contrib.color_picker.src.utils import rgb2hex
@@ -21,7 +22,7 @@ def generate_random_color(format):
 class OptionForm(ft.UserControl):
     
     def __init__(self, option_number,parent,**kwargs):
-        super().__init__(**kwargs)
+        super().__init__(key= None,**kwargs)
         self.option_number = option_number
         self.name_field = ft.TextField(value=f'{self.option_number}',label=f'Nombre de Opción {self.option_number}')
         self.color_picker = ColorPicker(generate_random_color('hex'))
@@ -80,6 +81,13 @@ class OptionForm(ft.UserControl):
     def _before_build_command(self):
         super()._before_build_command()
         # called every time on self.update()
+        
+        #Checks if it is the last element on the overlay
+        if self.container.controls[-1].ref == self.ref:
+            self.key = 'last_item'
+        else:
+            self.key = None
+                
         #This helps FilePicker update and maintain it's own state, besides updating the control reference after switching views
         self.build()
          
@@ -128,8 +136,13 @@ def main(page: ft.Page):
                 wheel.animate(e)
             else:
                 wheel.stop()
+        if e.key == 'Backspace' and page.route == ROUTE[0]:
+            num_options.focus()
         if e.key == 'Enter' and page.route == ROUTE[0]:
-            load_wheel_configuration(e)
+            add_options(e)
+            if len(overlay.controls) > 0:
+                time.sleep(0.3)
+                page.views[0].scroll_to(key='last_item',duration=300,curve=ft.AnimationCurve.EASE_IN)
         elif e.key == 'Tab':
             if page.route == ROUTE[0]:
                 load_wheel_configuration(e)
@@ -191,7 +204,6 @@ def main(page: ft.Page):
             with open(file_path) as f:
                 #Load Json File
                 forms_data = json.load(f)
-                num_options.value = len(forms_data)
                 #Removes all the other fields from the overlay if cleanup is True
                 if cleanup:
                     overlay.clean()
@@ -204,6 +216,8 @@ def main(page: ft.Page):
                     form.selected_files.value = data['image']
                     form.prob_field.value = data['probability']
                     overlay.controls.append(form)
+            
+            num_options.value = len(overlay.controls)
             page.update()
               
     #Define both FilePicker that will be used to load the data
