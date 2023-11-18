@@ -450,6 +450,9 @@ def main(page: ft.Page):
     def view_pop(e):
         if page.route == ROUTE[0] and len(overlay.controls) <= 1:
             return
+        else:
+            wheel.data = submit_form()
+            wheel.update_sections()
             
         view2.visible = not view2.visible
         view1.visible = not view1.visible
