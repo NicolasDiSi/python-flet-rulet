@@ -1,14 +1,14 @@
-import time
 import flet as ft
 from flet_contrib.color_picker import ColorPicker
 from flet_contrib.color_picker.src.utils import rgb2hex
 
+import time
 import random
 import json
 import os
 
 #Interfaz
-from Interface import CongratulationsDialog, FilePickerExample, ShortcutsDialog, SliderExample, Wheel, normalize_value
+from Interface import CongratulationsDialog, FilePickerExample, InputField, ShortcutsDialog, SliderExample, Wheel, normalize_value
 
 def generate_random_color(format):
     r = random.randint(0, 255)
@@ -19,6 +19,8 @@ def generate_random_color(format):
     else:
         return tuple(r,g,b)
 
+# Prevents Weird EventHandler behavior
+img_picker = ft.FilePicker()
 class OptionForm(ft.UserControl):
     
     def __init__(self, option_number,parent,**kwargs):
@@ -28,22 +30,22 @@ class OptionForm(ft.UserControl):
         self.color_picker = ColorPicker(generate_random_color('hex'))
         self.ref = self
         self.img_path = None
-        self.prob_field = SliderExample()
         self.container = parent
-        self.selected_files = ft.Text(width=105)
+        self.prob_field = SliderExample()
+        self.selected_files = ft.Text(ref=self,width=105,max_lines=3,overflow=ft.TextOverflow.ELLIPSIS)
         #Buttons to delete images or the instance
         self.del_instance = ft.IconButton( icon=ft.icons.DELETE_FOREVER_ROUNDED, on_click=self.remove_widget, data=0 )
         self.del_image = ft.IconButton( icon=ft.icons.CLOSE_ROUNDED, on_click=self.remove_image)
         
         #FilePicker for images
-        self.file_dialog = ft.FilePicker(self,on_result=self.pick_files_result)
+        self.file_dialog = img_picker
         self.file_dialog.initial_directory = self.img_path
         self.image_field = ft.Row(
                 [
                     ft.ElevatedButton(
                         "Selecciona imagen",
                         icon=ft.icons.UPLOAD_FILE,
-                        on_click=self.pick_files,
+                        on_click=self.handle_click,
                     ),
                     self.selected_files
                 ]
@@ -60,8 +62,8 @@ class OptionForm(ft.UserControl):
         
     def remove_image(self,e):        
         #Removes image from FilePicker
-        if self.file_dialog.result != None:
-            self.file_dialog.result.files.clear()
+        self.img_path = None
+            
         self.selected_files.value = ''
         self.selected_files.update()
         
@@ -69,13 +71,22 @@ class OptionForm(ft.UserControl):
         self.selected_files.value = (
             ", ".join(map(lambda f: f.name, e.files)) if e.files else "Cancelled!"
         )
-        self.selected_files.update()
-            
         
-    def pick_files(self,e):
+        if e.files:
+            self.img_path = os.path.relpath(e.files[0].path,os.path.dirname(__file__))
+        else:
+            self.img_path = None
+            
+        self.selected_files.update()
+        
+        
+    def handle_click(self,e):
+        self.file_dialog.on_result=self.pick_files_result
+        
         self.file_dialog.pick_files(
             allowed_extensions=['jpeg','jpg','png','svg','gif'],
-            file_type=ft.FilePickerFileType.IMAGE
+            file_type=ft.FilePickerFileType.IMAGE,
+            initial_directory = self.img_path
         )
     
     def _before_build_command(self):
@@ -107,7 +118,6 @@ class OptionForm(ft.UserControl):
                 self.del_instance,
                 ]),
                 self.color_picker,
-                self.file_dialog,
                 image_row,
                 self.prob_field,
             ],
@@ -120,6 +130,7 @@ class OptionForm(ft.UserControl):
 def main(page: ft.Page):
     page.title = "Define tu ruleta"
     page.vertical_alignment = ft.MainAxisAlignment.CENTER
+    
     ROUTE = ["/","/ruleta"]
     
     def on_keyboard(e: ft.KeyboardEvent):
@@ -137,37 +148,41 @@ def main(page: ft.Page):
             else:
                 wheel.stop()
         if e.key == 'Backspace' and page.route == ROUTE[0]:
-            num_options.focus()
+            if num_options.focused:
+                num_options.focus()
+                
         if e.key == 'Enter' and page.route == ROUTE[0]:
-            add_options(e)
             if len(overlay.controls) > 0:
-                time.sleep(0.3)
+                time.sleep(0.2)
                 page.views[0].scroll_to(key='last_item',duration=300,curve=ft.AnimationCurve.EASE_IN)
-        elif e.key == 'Tab':
+        
+        if e.key == 'Tab':
             if page.route == ROUTE[0]:
                 load_wheel_configuration(e)
             elif page.route == ROUTE[1]:
                 go_to_configuration(e)
          
-    
     page.on_keyboard_event = on_keyboard
+    
+    #Declaring the container for all the Inputs inside the Application  
+    overlay = ft.Row(
+        [],
+        wrap=True,
+        spacing=10,
+        run_spacing=10,
+        )
     
     #Parse all the data found inside the overlay
     def submit_form():
         forms_data = []
         for control in overlay.controls:
-            image = None
-            # print(control)
+            
             if isinstance(control, OptionForm):
-                if control.file_dialog.result != None and control.file_dialog.result.files != None:
-                    for f in control.file_dialog.result.files:
-                        image = os.path.dirname(f.path+'/'+f.name)
-                        # print(image)
                         
                 data = {
                     'title': control.name_field.value,
                     'color': control.color_picker.color,
-                    'image': image if control.img_path == None else control.img_path, # This will be the path to the uploaded file
+                    'image': control.img_path, # This will be the path to the uploaded file
                     'probability': control.prob_field.value
                 }
                 
@@ -178,14 +193,6 @@ def main(page: ft.Page):
     
     # Render a FilePicker to save the data in a .json format
     submit_button = FilePickerExample("Guardar Archivo",data=submit_form,save_file=True)
-    
-    #Declaring the container for all the Inputs inside the Application  
-    overlay = ft.Row(
-        [],
-        wrap=True,
-        spacing=10,
-        run_spacing=10,
-        )
     
     #Load Data from the selected file
     def load_data(filePicker=None,cleanup=True):
@@ -224,7 +231,7 @@ def main(page: ft.Page):
     config_load = FilePickerExample('Cargar Nueva Ruleta',callback=load_data)
     load_from_file = FilePickerExample('Añadir desde Archivo',callback=lambda:load_data(load_from_file,cleanup=False),icon=ft.icons.FILE_OPEN_ROUNDED)
     
-    num_options = ft.TextField(value=2,text_align=ft.TextAlign.CENTER,label='Ingresa la cantidad de opciones que quieres')
+    num_options = InputField(value=2,text_align=ft.TextAlign.CENTER,label='Ingresa la cantidad de opciones que quieres')
     #Both Keep track of the last autogenerated title inside the overlay
     last_value = 0
     last_option = None
@@ -290,6 +297,7 @@ def main(page: ft.Page):
                 ft.Row([
                     load_from_file,
                     config_load,
+                    img_picker,
                 ])
             ],
             wrap=True,
@@ -394,7 +402,10 @@ def main(page: ft.Page):
     view1= ft.View(
                 ROUTE[0],
                 [
-                    ft.AppBar(title=ft.Text("Configuración"), bgcolor=ft.colors.SURFACE_VARIANT),
+                    ft.AppBar(
+                        title=ft.Text("Configuración"),
+                        bgcolor=ft.colors.SURFACE_VARIANT
+                    ),
                     INPUT_ROW,
                     overlay,
                     ft.Row([
@@ -417,21 +428,33 @@ def main(page: ft.Page):
                     scroll=True
                 )
     
+    page.views.append(view1)
+    page.views.append(view2)
+    
     #Add views to page
     def route_change(e):
-        page.views.clear()
+        
         if page.route == ROUTE[0]:
-            page.views.append(view1)
+           view2.visible = False
+           view1.visible = True
+            
         if page.route == ROUTE[1]:
-            page.views.append(view2)
+            view1.visible = False
+            view2.visible = True
+
             wheel.is_mounted = True
+            
         page.update()
 
     #Pop views
     def view_pop(e):
-        page.views.pop()
-        top_view = page.views[-1]
-        page.go(top_view.route)
+        if page.route == ROUTE[0] and len(overlay.controls) <= 1:
+            return
+            
+        view2.visible = not view2.visible
+        view1.visible = not view1.visible
+        
+        page.update()
 
     page.on_route_change = route_change
     page.on_view_pop = view_pop
