@@ -36,8 +36,7 @@ class OptionForm(ft.UserControl):
         self.del_image = ft.IconButton( icon=ft.icons.CLOSE_ROUNDED, on_click=self.remove_image)
         
         #FilePicker for images
-        self.file_dialog = ft.FilePicker(self)
-        self.file_dialog.initial_directory = self.img_path
+        self.FILE_DIALOG = ft.FilePicker()
         self.image_field = ft.Row(
                 [
                     ft.ElevatedButton(
@@ -79,9 +78,8 @@ class OptionForm(ft.UserControl):
         
         
     def handle_click(self,e):
-        self.file_dialog.on_result=self.pick_files_result
         
-        self.file_dialog.pick_files(
+        self.FILE_DIALOG.pick_files(
             allowed_extensions=['jpeg','jpg','png','svg','gif'],
             file_type=ft.FilePickerFileType.IMAGE,
             initial_directory = self.img_path
@@ -102,13 +100,15 @@ class OptionForm(ft.UserControl):
          
     def build(self):
         
+        self.FILE_DIALOG.on_result=self.pick_files_result
+        self.FILE_DIALOG.initial_directory = self.img_path
+        
         image_row = ft.Row(
             [
                 self.image_field,
                 self.del_image,
             ]
         )
-        FILEPICKER = self.file_dialog
         
         return ft.Column( 
             [
@@ -117,7 +117,7 @@ class OptionForm(ft.UserControl):
                 self.del_instance,
                 ]),
                 self.color_picker,
-                FILEPICKER,
+                self.FILE_DIALOG,
                 image_row,
                 self.prob_field,
             ],
