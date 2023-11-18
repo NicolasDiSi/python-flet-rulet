@@ -19,8 +19,6 @@ def generate_random_color(format):
     else:
         return tuple(r,g,b)
 
-# Prevents Weird EventHandler behavior
-img_picker = ft.FilePicker()
 class OptionForm(ft.UserControl):
     
     def __init__(self, option_number,parent,**kwargs):
@@ -38,7 +36,7 @@ class OptionForm(ft.UserControl):
         self.del_image = ft.IconButton( icon=ft.icons.CLOSE_ROUNDED, on_click=self.remove_image)
         
         #FilePicker for images
-        self.file_dialog = img_picker
+        self.file_dialog = ft.FilePicker(self)
         self.file_dialog.initial_directory = self.img_path
         self.image_field = ft.Row(
                 [
@@ -100,7 +98,7 @@ class OptionForm(ft.UserControl):
             self.key = None
                 
         #This helps FilePicker update and maintain it's own state, besides updating the control reference after switching views
-        self.build()
+        # self.build()
          
     def build(self):
         
@@ -110,6 +108,7 @@ class OptionForm(ft.UserControl):
                 self.del_image,
             ]
         )
+        FILEPICKER = self.file_dialog
         
         return ft.Column( 
             [
@@ -118,6 +117,7 @@ class OptionForm(ft.UserControl):
                 self.del_instance,
                 ]),
                 self.color_picker,
+                FILEPICKER,
                 image_row,
                 self.prob_field,
             ],
@@ -297,7 +297,6 @@ def main(page: ft.Page):
                 ft.Row([
                     load_from_file,
                     config_load,
-                    img_picker,
                 ])
             ],
             wrap=True,
