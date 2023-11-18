@@ -197,8 +197,11 @@ class Badge(Container):
             animate = None,
             animate_rotation = None,
         )
+        self.src = src
+        
         
     def _before_build_command(self):
+        self.content = Image(self.src) if self.src != None and os.path.exists(self.src) else None
         return super()._before_build_command()
        
 #Initializes the chart that will represent the Wheel of fortune
@@ -418,7 +421,7 @@ class ShortcutsDialog(AlertDialog):
                     ]),
                     Row([
                         KeyBoardKey("SUBDIRECTORY_ARROW_LEFT","Enter"),
-                        Text("Load Wheel Configuration"),
+                        Text("Focus Last Option"),
                     ]),
                     Row([
                         KeyBoardKey("SYNC_ALT","Tab"),
@@ -458,3 +461,19 @@ class CongratulationsDialog(AlertDialog):
         self.open = False
         e.control.page.update()
 
+class InputField(TextField):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.focused = False
+        
+    def on_focus(self,e):
+        self.focused = True
+        return super().on_focus
+    
+    def on_blur(self,e):
+        self.focused = False
+        return super().on_blur
+    
+    def on_change(self):
+        self.focus()
+        return super().on_change
