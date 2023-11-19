@@ -36,17 +36,29 @@ class OptionForm(ft.UserControl):
         self.del_image = ft.IconButton( icon=ft.icons.CLOSE_ROUNDED, on_click=self.remove_image)
         
         #FilePicker for images
-        self.FILE_DIALOG = ft.FilePicker()
-        self.image_field = ft.Row(
-                [
-                    ft.ElevatedButton(
+        self.FILE_DIALOG = ft.FilePicker(on_result=self.pick_files_result)
+        self.FILE_DIALOG.initial_directory = self.img_path
+        
+        self.button = ft.ElevatedButton(
                         "Selecciona imagen",
+                        self,
                         icon=ft.icons.UPLOAD_FILE,
                         on_click=self.handle_click,
-                    ),
+                    )
+        
+        self.image_field = ft.Row(
+                [
+                    self.button,
                     self.selected_files
                 ]
             )
+        
+        self.image_row = ft.Row(
+            [
+                self.image_field,
+                self.del_image,
+            ]
+        )
     
     def remove_widget(self,e):
         #Search inside the overlay
@@ -65,25 +77,30 @@ class OptionForm(ft.UserControl):
         self.selected_files.update()
         
     def pick_files_result(self,e: ft.FilePickerResultEvent):
+        
         self.selected_files.value = (
             ", ".join(map(lambda f: f.name, e.files)) if e.files else "Cancelled!"
         )
         
         if e.files:
-            self.img_path = os.path.relpath(e.files[0].path,os.path.dirname(__file__))
+            self.img_path = os.path.relpath(e.files[0].path,os.getcwd())
         else:
             self.img_path = None
             
         self.selected_files.update()
         
         
-    def handle_click(self,e):
         
-        self.FILE_DIALOG.pick_files(
-            allowed_extensions=['jpeg','jpg','png','svg','gif'],
-            file_type=ft.FilePickerFileType.IMAGE,
-            initial_directory = self.img_path
-        )
+    def handle_click(self,e):
+        try:
+            # Code to load the image
+            self.FILE_DIALOG.pick_files(
+                allowed_extensions=['jpeg','jpg','png','svg','gif'],
+                file_type=ft.FilePickerFileType.IMAGE,
+                initial_directory = self.img_path
+            )
+        except Exception as e:
+            print(f"Error loading image: {e}")
     
     def _before_build_command(self):
         super()._before_build_command()
@@ -100,16 +117,6 @@ class OptionForm(ft.UserControl):
          
     def build(self):
         
-        self.FILE_DIALOG.on_result=self.pick_files_result
-        self.FILE_DIALOG.initial_directory = self.img_path
-        
-        image_row = ft.Row(
-            [
-                self.image_field,
-                self.del_image,
-            ]
-        )
-        
         return ft.Column( 
             [
                 ft.Row([
@@ -117,11 +124,9 @@ class OptionForm(ft.UserControl):
                 self.del_instance,
                 ]),
                 self.color_picker,
-                self.FILE_DIALOG,
-                image_row,
+                self.image_row,
                 self.prob_field,
             ],
-            ref=self.ref,
             spacing=10,
             wrap=True
         )
@@ -222,6 +227,8 @@ def main(page: ft.Page):
                     form.img_path = data['image']
                     form.selected_files.value = data['image']
                     form.prob_field.value = data['probability']
+                    # Adding each file picker individually
+                    page.add(form.FILE_DIALOG)
                     overlay.controls.append(form)
             
             num_options.value = len(overlay.controls)
@@ -256,6 +263,8 @@ def main(page: ft.Page):
         if current_value >= 1:
             for i in range(current_value):
                 form = OptionForm(position+i+1,overlay)
+                # Adding each file picker individually
+                page.add(form.FILE_DIALOG)
                 
                 overlay.controls.append(form)
                 last_value = position+i+1
